@@ -2,9 +2,9 @@ name: Android CI Bionic
 
 on:
   push:
-    branches: [ "ludashi-3.0" ]
+    branches: [ "winlator_bionic_vulkan_renderer" ]
   pull_request:
-    branches: [ "ludashi-3.0" ]
+    branches: [ "winlator_bionic_vulkan_renderer" ]
 
 permissions:
   contents: read
