@@ -237,6 +237,24 @@ public class GuestProgramLauncherComponent extends EnvironmentComponent {
 
     public void setFEXCorePreset (String fexcorePreset) { this.fexcorePreset = fexcorePreset; }
 
+    private static String mergePreloadValue(String current, String value) {
+        if (current == null || current.isEmpty()) {
+            return value;
+        }
+
+        return value + ":" + current;
+    }
+
+    private static String appendFirstExistingPreload(String ldPreload, File[] candidates) {
+        for (File candidate : candidates) {
+            if (candidate.exists()) {
+                return mergePreloadValue(ldPreload, candidate.getAbsolutePath());
+            }
+        }
+
+        return ldPreload;
+    }
+
     private int execGuestProgram() {
         Context context = environment.getContext();
         ImageFs imageFs = environment.getImageFs();
@@ -318,11 +336,28 @@ public class GuestProgramLauncherComponent extends EnvironmentComponent {
         envVars.put("WINE_NEW_NDIS", "1");
         
         String ld_preload = "";
-        
+
         // Check for specific shared memory libraries
-        if ((new File(imageFs.getLibDir(), "libandroid-sysvshm.so")).exists()){
+        if ((new File(imageFs.getLibDir(), "libandroid-sysvshm.so")).exists()) {
             ld_preload = imageFs.getLibDir() + "/libandroid-sysvshm.so";
         }
+
+        // HyperOS / OEM Vulkan ICD compatibility fixes
+
+        File[] jpegCandidates = new File[] {
+            new File("/system/lib64/libjpeg.so"),
+            new File("/system_ext/lib64/libjpeg.so"),
+        };
+
+        ld_preload = appendFirstExistingPreload(ld_preload, jpegCandidates);
+
+        File[] cryptoCandidates = new File[] {
+            new File("/system/lib64/libcrypto.so"),
+            new File("/system_ext/lib64/libcrypto.so"),
+            new File(imageFs.getLibDir(), "libcrypto.so.3"),
+        };
+
+        ld_preload = appendFirstExistingPreload(ld_preload, cryptoCandidates);
 
         envVars.put("LD_PRELOAD", ld_preload);
 
